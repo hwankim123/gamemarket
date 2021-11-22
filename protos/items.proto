@@ -4,18 +4,32 @@ option go_package = "github.com/hwankim123/first-go-grpc/protos";
 
 package items;
 
-service Greeter {
-  rpc GetAll (HelloRequest) returns (HelloReply) {}
+service Items {
+  rpc GetAll (ItemQuery) returns (ItemList) {}
 }
 
-message Option{
-    
+message QueryOption{
+  string optName = 1;
+  int32 upper = 2;
+  int32 under = 3;
 }
 
-message HelloRequest {
+// TODO : queryOpt type --> reapeted QueryOption
+message ItemQuery{
   string name = 1;
+  QueryOption queryOpt = 2;
 }
 
-message HelloReply {
-  string message = 1;
+message ItemOption{
+  string optName = 1;
+  int32 value = 2;
+}
+
+message ItemSpec{
+  string name = 1;
+  repeated ItemOption itemOpt = 2;
+}
+
+message ItemList{
+  repeated ItemSpec itemList = 1;
 }

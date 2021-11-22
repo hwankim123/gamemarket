@@ -14,86 +14,86 @@ import (
 // Requires gRPC-Go v1.32.0 or later.
 const _ = grpc.SupportPackageIsVersion7
 
-// GreeterClient is the client API for Greeter service.
+// ItemsClient is the client API for Items service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type GreeterClient interface {
-	GetAll(ctx context.Context, in *HelloRequest, opts ...grpc.CallOption) (*HelloReply, error)
+type ItemsClient interface {
+	GetAll(ctx context.Context, in *ItemQuery, opts ...grpc.CallOption) (*ItemList, error)
 }
 
-type greeterClient struct {
+type itemsClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewGreeterClient(cc grpc.ClientConnInterface) GreeterClient {
-	return &greeterClient{cc}
+func NewItemsClient(cc grpc.ClientConnInterface) ItemsClient {
+	return &itemsClient{cc}
 }
 
-func (c *greeterClient) GetAll(ctx context.Context, in *HelloRequest, opts ...grpc.CallOption) (*HelloReply, error) {
-	out := new(HelloReply)
-	err := c.cc.Invoke(ctx, "/items.Greeter/GetAll", in, out, opts...)
+func (c *itemsClient) GetAll(ctx context.Context, in *ItemQuery, opts ...grpc.CallOption) (*ItemList, error) {
+	out := new(ItemList)
+	err := c.cc.Invoke(ctx, "/items.Items/GetAll", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// GreeterServer is the server API for Greeter service.
-// All implementations must embed UnimplementedGreeterServer
+// ItemsServer is the server API for Items service.
+// All implementations must embed UnimplementedItemsServer
 // for forward compatibility
-type GreeterServer interface {
-	GetAll(context.Context, *HelloRequest) (*HelloReply, error)
-	mustEmbedUnimplementedGreeterServer()
+type ItemsServer interface {
+	GetAll(context.Context, *ItemQuery) (*ItemList, error)
+	mustEmbedUnimplementedItemsServer()
 }
 
-// UnimplementedGreeterServer must be embedded to have forward compatible implementations.
-type UnimplementedGreeterServer struct {
+// UnimplementedItemsServer must be embedded to have forward compatible implementations.
+type UnimplementedItemsServer struct {
 }
 
-func (UnimplementedGreeterServer) GetAll(context.Context, *HelloRequest) (*HelloReply, error) {
+func (UnimplementedItemsServer) GetAll(context.Context, *ItemQuery) (*ItemList, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetAll not implemented")
 }
-func (UnimplementedGreeterServer) mustEmbedUnimplementedGreeterServer() {}
+func (UnimplementedItemsServer) mustEmbedUnimplementedItemsServer() {}
 
-// UnsafeGreeterServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to GreeterServer will
+// UnsafeItemsServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to ItemsServer will
 // result in compilation errors.
-type UnsafeGreeterServer interface {
-	mustEmbedUnimplementedGreeterServer()
+type UnsafeItemsServer interface {
+	mustEmbedUnimplementedItemsServer()
 }
 
-func RegisterGreeterServer(s grpc.ServiceRegistrar, srv GreeterServer) {
-	s.RegisterService(&Greeter_ServiceDesc, srv)
+func RegisterItemsServer(s grpc.ServiceRegistrar, srv ItemsServer) {
+	s.RegisterService(&Items_ServiceDesc, srv)
 }
 
-func _Greeter_GetAll_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(HelloRequest)
+func _Items_GetAll_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ItemQuery)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(GreeterServer).GetAll(ctx, in)
+		return srv.(ItemsServer).GetAll(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/items.Greeter/GetAll",
+		FullMethod: "/items.Items/GetAll",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GreeterServer).GetAll(ctx, req.(*HelloRequest))
+		return srv.(ItemsServer).GetAll(ctx, req.(*ItemQuery))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-// Greeter_ServiceDesc is the grpc.ServiceDesc for Greeter service.
+// Items_ServiceDesc is the grpc.ServiceDesc for Items service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var Greeter_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "items.Greeter",
-	HandlerType: (*GreeterServer)(nil),
+var Items_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "items.Items",
+	HandlerType: (*ItemsServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
 			MethodName: "GetAll",
-			Handler:    _Greeter_GetAll_Handler,
+			Handler:    _Items_GetAll_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

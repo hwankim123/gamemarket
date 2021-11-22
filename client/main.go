@@ -2,55 +2,47 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
-	"os"
 	"time"
 
-	pb "first-go-grpc/items"
+	pb "first-go-grpc/protos"
 
 	"google.golang.org/grpc"
 )
 
 const address = "localhost:8080"
 
-const defaultMode = "-1"
-const commandFmt = "command format : mode query"
-
-type queryStruct struct {
-	itemName string
-	itemType string
-	opt      []string
-}
-
 func main() {
-	conn, err := grpc.Dial(address, grpc.WithInsecure(), grpc.WithBlock())
+	conn, err := grpc.Dial(address, grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}
 	defer conn.Close()
-	c := pb.NewItemsClient(conn)
 
-	mode := defaultMode
-	opt := []string{"", "", "", ""}
-	query := queryStruct{"", "", opt}
-	if len(os.Args) > 1 {
-		mode = os.Args[1]
-		if mode == "1" { // Get Items By Name
-			query.itemName = os.Args[2]
-		}
-	} else {
-		log.Fatalf(commandFmt)
-	}
+	stub := pb.NewItemsClient(conn)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	if mode == "1" { // Get Items By Name
-		r, err := c.GetByName(ctx, &pb.NameReq{
-			&pb.ItemMsg{
-				Name: query.itemName,
-				Type: query.itemType,
-				
-			}
-		})
-	}
 
+	fmt.Println("=====Welcome to GameMarket!=====")
+
+	r, err := stub.GetAll(ctx, &pb.ItemQuery{
+		Name: "Weapon1",
+		QueryOpt: &pb.QueryOption{
+			OptName: "power",
+			Upper:   1,
+			Under:   50,
+		},
+	})
+	if err != nil {
+		log.Fatalf("could not get: %v", err)
+	}
+	if len(r.GetItemList()) == 0 {
+		fmt.Printf("Item Not Found.\n\n")
+	} else {
+		for i := 0; i < len(r.GetItemList()); i++ {
+			log.Printf("====== Search Result =====\n%s", r.GetItemList()[i])
+		}
+
+	}
 }
