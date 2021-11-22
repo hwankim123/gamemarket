@@ -14,6 +14,9 @@ message QueryOption{
   int32 under = 3;
 }
 
+// 정보 : optional 이라는 키워드로 변수에 값 안넣었을 시 default value 넣어주는거 있나봐
+// 출처 : https://developers.google.com/protocol-buffers/docs/reference/go-generated
+
 // TODO : queryOpt type --> reapeted QueryOption
 message ItemQuery{
   string name = 1;

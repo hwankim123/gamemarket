@@ -34,7 +34,9 @@ func (s *server) GetAll(ctx context.Context, in *pb.ItemQuery) (*pb.ItemList, er
 	fmt.Println("")
 	log.Printf("Received From Client: %v, %v", in.GetName(), in.GetQueryOpt())
 
-	var returnMsg *pb.ItemList
+	returnMsg := pb.ItemList{
+		ItemList: make([]*pb.ItemSpec, 0),
+	}
 
 	for i := 0; i < len(data); i++ {
 		if in.GetName() == data[i].name {
@@ -67,6 +69,7 @@ func (s *server) GetAll(ctx context.Context, in *pb.ItemQuery) (*pb.ItemList, er
 					Name:    data[i].name,
 					ItemOpt: resultOpt,
 				}
+				log.Printf("\nItemSpec: %s", spec.String())
 				returnMsg.ItemList = append(returnMsg.ItemList, &spec)
 			}
 		} else {
@@ -78,7 +81,7 @@ func (s *server) GetAll(ctx context.Context, in *pb.ItemQuery) (*pb.ItemList, er
 		return new(pb.ItemList), nil
 	} else {
 		log.Printf(returnMsg.String())
-		return returnMsg, nil
+		return &returnMsg, nil
 	}
 }
 
