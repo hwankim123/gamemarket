@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"math/rand"
 	"net"
 
 	// .pb.go 파일 경로 설정 : 프로젝트 폴더부터 시작
@@ -18,60 +19,99 @@ type server struct {
 	pb.UnimplementedItemsServer
 }
 
-type ItemOpt struct {
-	optName string
-	value   int
+func isOutOfIdx(slice []ItemOpt, cnt int) bool {
+	if cnt == len(slice) {
+		return true
+		// 이 아이템은 원하는 아이템이 아닌거임
+	} else {
+		return false
+	}
 }
-
-type ItemSpec struct {
-	name    string
-	itemOpt []ItemOpt
-}
-
-var data []ItemSpec
 
 func (s *server) GetAll(ctx context.Context, in *pb.ItemQuery) (*pb.ItemList, error) {
 	fmt.Println("")
-	log.Printf("Received From Client: %v, %v", in.GetName(), in.GetQueryOpt())
+	log.Printf("Received From Client: name - %v, cost - %d ~ %d, scope - %v",
+		in.GetName(), in.GetCostUpper(), in.GetCostUnder(), in.GetQueryOpt())
 
 	returnMsg := pb.ItemList{
 		ItemList: make([]*pb.ItemSpec, 0),
 	}
 
 	for i := 0; i < len(data); i++ {
-		if in.GetName() == data[i].name {
-			under := in.GetQueryOpt().GetUnder()
-			upper := in.GetQueryOpt().GetUpper()
-			option := data[i].itemOpt
-			flag := true
-			fmt.Printf("in data[%d]: %s", i, data[i].name)
-			// TODO : power면 power에 대한 value를 찾아야 하는데 그에 대한 로직이 없음
-			// 그리고 이름은 search 되는데 여기에서 뻑남
-			for j := 0; j < len(option); j++ {
-				value := int32(option[j].value)
-				if value <= under && upper <= value {
-					continue
-				} else {
-					flag = false
-					break
+		if in.GetName() == "" || in.GetName() == data[i].name {
+			// item name matched
+			fmt.Printf("matching item : %s\n", data[i].name)
+
+			dataCost := data[i].cost
+			if in.GetCostUpper() <= int32(dataCost) && int32(dataCost) <= in.GetCostUnder() {
+				// item cost matched
+				fmt.Printf("matching item cost : %d ~ %d\n", in.GetCostUpper(), in.GetCostUnder())
+
+				var optName string
+				var upper int32
+				var under int32
+				dataOpt := data[i].itemOpt
+				foundItem := true
+				for j := 0; j < len(in.GetQueryOpt()); j++ {
+					// each query option(0 ~ 3)
+
+					cnt := 0   // index of dataOpt
+					for true { // while cnt == len(dataOpt)
+						optName = in.GetQueryOpt()[j].OptName
+						fmt.Printf("matching %s of option : %s\n", data[i].name, optName)
+						if optName == "" || optName == dataOpt[cnt].optName {
+							// option name matched
+
+							upper = in.GetQueryOpt()[j].Upper
+							under = in.GetQueryOpt()[j].Under
+							value := int32(dataOpt[cnt].value)
+							fmt.Printf("matching %s of %s value: %d\n", data[i].name, optName, value)
+							if upper <= value && value <= under {
+								break
+							} else {
+								cnt++
+								if isOutOfIdx(dataOpt, cnt) {
+									// 이 아이템은 원하는 아이템이 아닌거임
+									foundItem = false
+									break
+								}
+							}
+						} else {
+							cnt++
+							if isOutOfIdx(dataOpt, cnt) {
+								// 이 아이템은 원하는 아이템이 아닌거임
+								foundItem = false
+								break
+							}
+						}
+					}
 				}
+				if foundItem {
+					// make repeated ItemOption message
+					var itemOpt []*pb.ItemOption
+					for j := 0; j < len(dataOpt); j++ {
+						itemOpt = append(itemOpt, &pb.ItemOption{
+							OptName: dataOpt[j].optName,
+							Value:   int32(dataOpt[j].value),
+						})
+					}
+
+					// make ItemSpec message
+					spec := pb.ItemSpec{
+						Id:      int32(data[i].id),
+						Name:    data[i].name,
+						Cost:    int32(dataCost),
+						ItemOpt: itemOpt,
+					}
+
+					// make ItemList message
+					fmt.Printf("ItemSpec: %s\n", spec.String())
+					returnMsg.ItemList = append(returnMsg.ItemList, &spec)
+				}
+			} else {
+				fmt.Printf("Cost unmatched: %d ~ %d\n", in.GetCostUpper(), in.GetCostUnder())
 			}
-			if flag {
-				// 언제 *pb이고 언제 &pb인지...?
-				var resultOpt []*pb.ItemOption
-				for j := 0; j < len(option); j++ {
-					resultOpt = append(resultOpt, &pb.ItemOption{
-						OptName: option[j].optName,
-						Value:   int32(option[j].value),
-					})
-				}
-				spec := pb.ItemSpec{
-					Name:    data[i].name,
-					ItemOpt: resultOpt,
-				}
-				log.Printf("\nItemSpec: %s", spec.String())
-				returnMsg.ItemList = append(returnMsg.ItemList, &spec)
-			}
+
 		} else {
 			fmt.Printf("Has no Item that name is %s\n", in.GetName())
 		}
@@ -80,7 +120,9 @@ func (s *server) GetAll(ctx context.Context, in *pb.ItemQuery) (*pb.ItemList, er
 		log.Printf("Item Not Found.")
 		return new(pb.ItemList), nil
 	} else {
-		log.Printf(returnMsg.String())
+		// send ItemList message
+
+		log.Printf("Result Item count: %d", len(returnMsg.GetItemList()))
 		return &returnMsg, nil
 	}
 }
@@ -92,10 +134,8 @@ func main() {
 	}
 
 	// data 준비
-	option := ItemOpt{optName: "power", value: 15}
-	optionList := []ItemOpt{option}
-	item1 := ItemSpec{name: "Weapon1", itemOpt: optionList}
-	data = []ItemSpec{item1}
+	generateData()
+	logData()
 
 	s := grpc.NewServer()
 	pb.RegisterItemsServer(s, &server{})
@@ -103,5 +143,88 @@ func main() {
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
+}
 
+////////// private func & var ///////////
+
+type ItemOpt struct {
+	optName string
+	value   int
+}
+
+type ItemSpec struct {
+	id      int
+	name    string
+	cost    int
+	itemOpt []ItemOpt
+}
+
+var data []ItemSpec
+
+var nameSet = [...]string{
+	"Weapon1", "Weapon2", "Weapon3", "Weapon4", "Weapon5",
+	"Armour1", "Armour2", "Armour3", "Armour4", "Armour5",
+	"Helmet1", "Helmet2", "Helmet3", "Helmet4", "Helmet5",
+	"Boots1", "Boots2", "Boots3", "Boots4", "Boots5",
+}
+
+var weaponOptNameSet = []string{
+	"power", "attack speed",
+}
+var armourOptNameSet = []string{
+	"hp", "mp", "defence",
+}
+var helmetOptNameSet = []string{
+	"hp", "mp", "defence",
+}
+var bootsOptNameSet = []string{
+	"hp", "mp", "speed",
+}
+
+const dataCount = 50
+const optCount = 3
+const MIN = 0
+const MAX = 100
+const COST_MAX = 10000
+
+func generateData() {
+	nameLen := len(nameSet)
+	for i := 0; i < dataCount; i++ {
+		randName := nameSet[rand.Intn(nameLen)]
+		var optionList []ItemOpt
+		switch randName[0] {
+		case 'W':
+			optionList = generateOption(weaponOptNameSet, optionList)
+		case 'A':
+			optionList = generateOption(armourOptNameSet, optionList)
+		case 'H':
+			optionList = generateOption(helmetOptNameSet, optionList)
+		case 'B':
+			optionList = generateOption(bootsOptNameSet, optionList)
+		}
+		item := ItemSpec{
+			id:      i,
+			name:    randName,
+			cost:    rand.Intn(COST_MAX),
+			itemOpt: optionList,
+		}
+		data = append(data, item)
+	}
+}
+
+func generateOption(optNameSet []string, optionList []ItemOpt) []ItemOpt {
+	for j := 0; j < len(optNameSet); j++ {
+		option := ItemOpt{optName: optNameSet[j], value: rand.Intn(MAX)}
+		if option.value != 0 {
+			optionList = append(optionList, option)
+		}
+	}
+	return optionList
+}
+
+func logData() {
+	fmt.Println("==== data list ====")
+	for i := 0; i < len(data); i++ {
+		fmt.Println(data[i])
+	}
 }

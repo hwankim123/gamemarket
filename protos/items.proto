@@ -6,31 +6,37 @@ package items;
 
 service Items {
   rpc GetAll (ItemQuery) returns (ItemList) {}
+  // rpc Buy(Delete)
+  // rpc Sell(Post)
 }
 
+// message in ItemQuery
 message QueryOption{
   string optName = 1;
   int32 upper = 2;
   int32 under = 3;
 }
 
-// 정보 : optional 이라는 키워드로 변수에 값 안넣었을 시 default value 넣어주는거 있나봐
-// 출처 : https://developers.google.com/protocol-buffers/docs/reference/go-generated
-
-// TODO : queryOpt type --> reapeted QueryOption
+// request message
 message ItemQuery{
   string name = 1;
-  QueryOption queryOpt = 2;
+  int32 costUpper = 2;
+  int32 costUnder = 3;
+  repeated QueryOption queryOpt = 4;
 }
 
+// message in ItemSpec
 message ItemOption{
   string optName = 1;
   int32 value = 2;
 }
 
+// response message
 message ItemSpec{
-  string name = 1;
-  repeated ItemOption itemOpt = 2;
+  int32 id = 1;
+  string name = 2;
+  int32 cost = 3;
+  repeated ItemOption itemOpt = 4;
 }
 
 message ItemList{
