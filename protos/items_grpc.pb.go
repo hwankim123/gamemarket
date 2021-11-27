@@ -19,6 +19,8 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ItemsClient interface {
 	GetAll(ctx context.Context, in *ItemQuery, opts ...grpc.CallOption) (*ItemList, error)
+	Buy(ctx context.Context, in *ItemId, opts ...grpc.CallOption) (*ItemSpec, error)
+	Sell(ctx context.Context, in *ItemQuery, opts ...grpc.CallOption) (*ItemSpec, error)
 }
 
 type itemsClient struct {
@@ -38,11 +40,31 @@ func (c *itemsClient) GetAll(ctx context.Context, in *ItemQuery, opts ...grpc.Ca
 	return out, nil
 }
 
+func (c *itemsClient) Buy(ctx context.Context, in *ItemId, opts ...grpc.CallOption) (*ItemSpec, error) {
+	out := new(ItemSpec)
+	err := c.cc.Invoke(ctx, "/items.Items/Buy", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *itemsClient) Sell(ctx context.Context, in *ItemQuery, opts ...grpc.CallOption) (*ItemSpec, error) {
+	out := new(ItemSpec)
+	err := c.cc.Invoke(ctx, "/items.Items/Sell", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ItemsServer is the server API for Items service.
 // All implementations must embed UnimplementedItemsServer
 // for forward compatibility
 type ItemsServer interface {
 	GetAll(context.Context, *ItemQuery) (*ItemList, error)
+	Buy(context.Context, *ItemId) (*ItemSpec, error)
+	Sell(context.Context, *ItemQuery) (*ItemSpec, error)
 	mustEmbedUnimplementedItemsServer()
 }
 
@@ -52,6 +74,12 @@ type UnimplementedItemsServer struct {
 
 func (UnimplementedItemsServer) GetAll(context.Context, *ItemQuery) (*ItemList, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetAll not implemented")
+}
+func (UnimplementedItemsServer) Buy(context.Context, *ItemId) (*ItemSpec, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Buy not implemented")
+}
+func (UnimplementedItemsServer) Sell(context.Context, *ItemQuery) (*ItemSpec, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Sell not implemented")
 }
 func (UnimplementedItemsServer) mustEmbedUnimplementedItemsServer() {}
 
@@ -84,6 +112,42 @@ func _Items_GetAll_Handler(srv interface{}, ctx context.Context, dec func(interf
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Items_Buy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ItemId)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ItemsServer).Buy(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/items.Items/Buy",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ItemsServer).Buy(ctx, req.(*ItemId))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Items_Sell_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ItemQuery)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ItemsServer).Sell(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/items.Items/Sell",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ItemsServer).Sell(ctx, req.(*ItemQuery))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Items_ServiceDesc is the grpc.ServiceDesc for Items service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -94,6 +158,14 @@ var Items_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetAll",
 			Handler:    _Items_GetAll_Handler,
+		},
+		{
+			MethodName: "Buy",
+			Handler:    _Items_Buy_Handler,
+		},
+		{
+			MethodName: "Sell",
+			Handler:    _Items_Sell_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

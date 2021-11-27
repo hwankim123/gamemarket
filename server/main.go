@@ -19,12 +19,21 @@ type server struct {
 	pb.UnimplementedItemsServer
 }
 
-func isOutOfIdx(slice []ItemOpt, cnt int) bool {
-	if cnt == len(slice) {
-		return true
-		// 이 아이템은 원하는 아이템이 아닌거임
-	} else {
-		return false
+func main() {
+	lis, err := net.Listen("tcp", port)
+	if err != nil {
+		log.Fatalf("failed to listen: %v", err)
+	}
+
+	// data 준비
+	generateData()
+	logData()
+
+	s := grpc.NewServer()
+	pb.RegisterItemsServer(s, &server{})
+	log.Printf("server listening at %v", lis.Addr())
+	if err := s.Serve(lis); err != nil {
+		log.Fatalf("failed to serve: %v", err)
 	}
 }
 
@@ -127,25 +136,79 @@ func (s *server) GetAll(ctx context.Context, in *pb.ItemQuery) (*pb.ItemList, er
 	}
 }
 
-func main() {
-	lis, err := net.Listen("tcp", port)
-	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
-	}
-
-	// data 준비
-	generateData()
-	logData()
-
-	s := grpc.NewServer()
-	pb.RegisterItemsServer(s, &server{})
-	log.Printf("server listening at %v", lis.Addr())
-	if err := s.Serve(lis); err != nil {
-		log.Fatalf("failed to serve: %v", err)
+func isOutOfIdx(slice []ItemOpt, cnt int) bool {
+	if cnt == len(slice) {
+		return true
+		// 이 아이템은 원하는 아이템이 아닌거임
+	} else {
+		return false
 	}
 }
 
-////////// private func & var ///////////
+func (s *server) Sell(ctx context.Context, in *pb.ItemQuery) (*pb.ItemSpec, error) {
+	// data에 추가할 option list
+	var optionList []ItemOpt
+	// request 받은 option list
+	queryOpt := in.GetQueryOpt()
+	for j := 0; j < len(queryOpt); j++ {
+		option := ItemOpt{
+			optName: queryOpt[j].GetOptName(),
+			value:   int(queryOpt[j].GetUnder()),
+		}
+		optionList = append(optionList, option)
+	}
+	// data 추가
+	itemSpec := ItemSpec{
+		id:      dataCount,
+		name:    in.GetName(),
+		cost:    int(in.GetCostUnder()),
+		itemOpt: optionList,
+	}
+	data = append(data, itemSpec)
+	var returnItemOption []*pb.ItemOption
+	for i := 0; i < len(optionList); i++ {
+		option := pb.ItemOption{
+			OptName: optionList[i].optName,
+			Value:   int32(optionList[i].value),
+		}
+		returnItemOption = append(returnItemOption, &option)
+	}
+	returnItemSpec := pb.ItemSpec{
+		Id:      int32(dataCount),
+		Name:    itemSpec.name,
+		Cost:    int32(itemSpec.cost),
+		ItemOpt: returnItemOption,
+	}
+	dataCount += 1
+	return &returnItemSpec, nil
+}
+
+func (s *server) Buy(ctx context.Context, in *pb.ItemId) (*pb.ItemSpec, error) {
+	id := int(in.GetId())
+	dataCount--
+	var returnItemOption []*pb.ItemOption
+	for i := 0; i < len(data[id].itemOpt); i++ {
+		option := pb.ItemOption{
+			OptName: data[id].itemOpt[i].optName,
+			Value:   int32(data[id].itemOpt[i].value),
+		}
+		returnItemOption = append(returnItemOption, &option)
+	}
+	returnItemSpec := pb.ItemSpec{
+		Id:      int32(id),
+		Name:    data[id].name,
+		Cost:    int32(data[id].cost),
+		ItemOpt: returnItemOption,
+	}
+	// data 삭제
+	if deleteData(id) {
+		return &returnItemSpec, nil
+	} else {
+		return new(pb.ItemSpec), fmt.Errorf("item no.%d doesn't exists", id)
+	}
+}
+
+////////// Local data, var, func ///////////
 
 type ItemOpt struct {
 	optName string
@@ -181,7 +244,8 @@ var bootsOptNameSet = []string{
 	"hp", "mp", "speed",
 }
 
-const dataCount = 50
+var dataCount = 50
+
 const optCount = 3
 const MIN = 0
 const MAX = 100
@@ -194,13 +258,13 @@ func generateData() {
 		var optionList []ItemOpt
 		switch randName[0] {
 		case 'W':
-			optionList = generateOption(weaponOptNameSet, optionList)
+			optionList = generateOption(weaponOptNameSet)
 		case 'A':
-			optionList = generateOption(armourOptNameSet, optionList)
+			optionList = generateOption(armourOptNameSet)
 		case 'H':
-			optionList = generateOption(helmetOptNameSet, optionList)
+			optionList = generateOption(helmetOptNameSet)
 		case 'B':
-			optionList = generateOption(bootsOptNameSet, optionList)
+			optionList = generateOption(bootsOptNameSet)
 		}
 		item := ItemSpec{
 			id:      i,
@@ -212,7 +276,8 @@ func generateData() {
 	}
 }
 
-func generateOption(optNameSet []string, optionList []ItemOpt) []ItemOpt {
+func generateOption(optNameSet []string) []ItemOpt {
+	var optionList []ItemOpt
 	for j := 0; j < len(optNameSet); j++ {
 		option := ItemOpt{optName: optNameSet[j], value: rand.Intn(MAX)}
 		if option.value != 0 {
@@ -227,4 +292,19 @@ func logData() {
 	for i := 0; i < len(data); i++ {
 		fmt.Println(data[i])
 	}
+}
+
+func deleteData(id int) bool {
+	for i := 0; i < len(data); i++ {
+		if id == data[i].id {
+			data = append(data[:i], data[i+1:]...)
+			fmt.Printf("==== data deleted %d ====\n", id)
+			for i := 0; i < len(data); i++ {
+				fmt.Println(data[i])
+			}
+			return true
+		}
+	}
+	fmt.Printf("==== data delete: error occured: %d no exists\n", id)
+	return false
 }

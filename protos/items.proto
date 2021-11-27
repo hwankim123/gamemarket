@@ -6,8 +6,8 @@ package items;
 
 service Items {
   rpc GetAll (ItemQuery) returns (ItemList) {}
-  // rpc Buy(Delete)
-  // rpc Sell(Post)
+  rpc Buy(ItemId) returns (ItemSpec) {}
+  rpc Sell(ItemQuery) returns (ItemSpec) {}
 }
 
 // message in ItemQuery
@@ -17,7 +17,7 @@ message QueryOption{
   int32 under = 3;
 }
 
-// request message
+// request ItemQuery message
 message ItemQuery{
   string name = 1;
   int32 costUpper = 2;
@@ -31,7 +31,7 @@ message ItemOption{
   int32 value = 2;
 }
 
-// response message
+// each ItemSpec of ItemList
 message ItemSpec{
   int32 id = 1;
   string name = 2;
@@ -39,6 +39,12 @@ message ItemSpec{
   repeated ItemOption itemOpt = 4;
 }
 
+// response message
 message ItemList{
   repeated ItemSpec itemList = 1;
+}
+
+// request ItemId message
+message ItemId{
+  int32 id = 1;
 }
