@@ -36,7 +36,7 @@ func main() {
 
 	fmt.Print("\033[H\033[2J")
 	fmt.Print("=====Welcome to GameMarket!=====\n")
-	for true {
+	for {
 		fmt.Println("\n===Choose Mode===")
 		fmt.Println("0. quit")
 		fmt.Println("1. Search All")
