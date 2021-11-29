@@ -73,10 +73,7 @@ func getAll(stub pb.ItemsClient) {
 	if len(r.GetItemList()) == 0 {
 		fmt.Printf("Item Not Found.\n\n")
 	} else {
-		fmt.Printf("====== Search Result =====\n")
-		for i := 0; i < len(r.GetItemList()); i++ {
-			fmt.Println(r.GetItemList()[i])
-		}
+		printItemListF(r)
 	}
 }
 
@@ -102,8 +99,7 @@ func sellItem(stub pb.ItemsClient) {
 	if err != nil {
 		log.Fatalf("could not sell: %v", err)
 	} else {
-		fmt.Printf("====== Sell Result =====\n")
-		fmt.Println(r)
+		printItemSpecF("Sell", r)
 	}
 }
 
@@ -119,11 +115,10 @@ func buyItem(stub pb.ItemsClient) {
 	r, err := stub.Buy(ctx, &pb.ItemId{Id: int32(id)})
 
 	// handle response
-	fmt.Printf("====== Buy Result =====\n")
 	if err != nil {
 		log.Print(err)
 	} else {
-		fmt.Println(r)
+		printItemSpecF("Buy", r)
 	}
 }
 
@@ -180,7 +175,6 @@ func inputOptF() []*pb.QueryOption {
 			// input error: no input about option name
 			fmt.Println("Option name requires at least one. Please write again")
 			i--
-			break
 		} else if optName == "s" && i != 0 {
 			// stop adding query
 			break
@@ -285,4 +279,27 @@ func printMenuF() {
 	fmt.Println("2. Sell Item")
 	fmt.Println("3. Buy Item")
 	fmt.Print(">> ")
+}
+
+func printItemListF(r *pb.ItemList) {
+	fmt.Printf("====== Search Result =====\n")
+	for i := 0; i < len(r.GetItemList()); i++ {
+		itemSpec := r.GetItemList()[i]
+		fmt.Printf("%d. name: %s, cost: %d, options below\n", itemSpec.GetId(), itemSpec.GetName(), itemSpec.GetCost())
+		for j := 0; j < len(itemSpec.ItemOpt); j++ {
+			itemOpt := itemSpec.GetItemOpt()
+			fmt.Printf("  %s: %d  //", itemOpt[j].GetOptName(), itemOpt[j].GetValue())
+		}
+		fmt.Printf("\n\n")
+	}
+}
+
+func printItemSpecF(mode string, r *pb.ItemSpec) {
+	fmt.Printf("====== %s Result =====\n", mode)
+	fmt.Printf("%d. name: %s, cost: %d, options below\n", r.GetId(), r.GetName(), r.GetCost())
+	for j := 0; j < len(r.ItemOpt); j++ {
+		itemOpt := r.GetItemOpt()
+		fmt.Printf("  %s: %d  //", itemOpt[j].GetOptName(), itemOpt[j].GetValue())
+	}
+	fmt.Printf("\n\n")
 }

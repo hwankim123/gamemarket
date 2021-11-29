@@ -31,7 +31,7 @@ func PrepareData() {
 func GetAllController(in ItemQuery) []data.ItemSpec {
 
 	fmt.Println("")
-	log.Printf("Received From Client: name - %v, cost - %d ~ %d, scope - %v",
+	log.Printf("Received From Client: name - %v, cost - %d ~ %d, scope - %v\n",
 		in.Name, in.CostUpper, in.CostUnder, in.QueryOpt)
 
 	returnMsg := make([]data.ItemSpec, 0)
@@ -59,22 +59,23 @@ func GetAllController(in ItemQuery) []data.ItemSpec {
 					cnt := 0
 					for { // while cnt == len(dataOpt)
 						optName = in.QueryOpt[j].OptName
-						fmt.Printf("%s's option name matched : %d.%s\n", itemData[i].Name, j, optName)
 						if optName == "" || optName == dataOpt[cnt].OptName { // if option name matched
+							fmt.Printf("%s's option name matched : %d.%s\n", itemData[i].Name, j, optName)
 							upper = in.QueryOpt[j].Upper
 							under = in.QueryOpt[j].Under
 							// value : value of matched option
 							value := dataOpt[cnt].Value
 
 							if upper <= value && value <= under { // if option value matched
-								fmt.Printf("%d.%s's option : %s's value matched : %d\n", j, itemData[i].Name, optName, value)
+								fmt.Printf("%s's option : %s's value %d ~ %d matched : %d\n",
+									in.Name, optName, in.CostUpper, in.CostUnder, value)
 								break
 							} else {
 								cnt++
 								if isOutOfIdx(dataOpt, cnt) {
 									// item unmatched : all the option values of matched item doesn't matched
-									fmt.Printf("%s's option %s : all the option values of matched item doesn't matched",
-										in.Name, in.QueryOpt[j].OptName)
+									fmt.Printf("%s's option %s %d ~ %d : all the option values of matched item doesn't matched\n\n",
+										in.Name, in.QueryOpt[j].OptName, in.QueryOpt[j].Upper, in.QueryOpt[j].Under)
 									foundItem = false
 									break
 								}
@@ -83,7 +84,7 @@ func GetAllController(in ItemQuery) []data.ItemSpec {
 							cnt++
 							if isOutOfIdx(dataOpt, cnt) {
 								// item unmatched : item name doesn't matched
-								fmt.Printf("%s's option %s : option name doesn't matched",
+								fmt.Printf("%s's option %s : option name doesn't matched\n\n",
 									in.Name, in.QueryOpt[j].OptName)
 								foundItem = false
 								break
@@ -110,17 +111,17 @@ func GetAllController(in ItemQuery) []data.ItemSpec {
 					}
 
 					// make ItemList
-					fmt.Printf("ItemSpec: %p\n", &spec)
+					fmt.Printf("%s matched : item id : %d\n\n", spec.Name, spec.Id)
 					returnMsg = append(returnMsg, spec)
 				}
 			} else {
 				// item unmatched : item cost doesn't matched
-				fmt.Printf("%s's cost %d ~ %d : item cost doesn't matched",
-					in.Name, in.CostUpper, in.CostUnder)
+				fmt.Printf("%s's cost %d ~ %d : item cost doesn't matched: %d\n\n",
+					in.Name, in.CostUpper, in.CostUnder, dataCost)
 			}
 		} else {
 			// item unmatched : item name doesn't matched
-			fmt.Printf("%s : item name doesn't matched", in.Name)
+			fmt.Printf("%s : item name doesn't matched: %s\n\n", in.Name, itemData[i].Name)
 		}
 	}
 	return returnMsg

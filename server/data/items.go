@@ -106,6 +106,7 @@ func GenerateOption(optNameSet []string) []ItemOpt {
 
 func LogData() {
 	fmt.Println("==== data list ====")
+
 	for i := 0; i < len(data); i++ {
 		fmt.Println(data[i])
 	}
