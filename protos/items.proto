@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-option go_package = "first-go-grpc/protos";
+option go_package = "gamemarket/protos";
 
 package items;
 
@@ -10,7 +10,7 @@ service Items {
   rpc Sell(ItemQuery) returns (ItemSpec) {}
 }
 
-// message in ItemQuery
+// member message in ItemQuery
 message QueryOption{
   string optName = 1;
   int32 upper = 2;
@@ -25,13 +25,14 @@ message ItemQuery{
   repeated QueryOption queryOpt = 4;
 }
 
-// message in ItemSpec
+// member message in ItemSpec
 message ItemOption{
   string optName = 1;
   int32 value = 2;
 }
 
-// each ItemSpec of ItemList
+// response ItemSpec message
+// member message in ItemList
 message ItemSpec{
   int32 id = 1;
   string name = 2;
@@ -39,7 +40,7 @@ message ItemSpec{
   repeated ItemOption itemOpt = 4;
 }
 
-// response message
+// response ItemList message
 message ItemList{
   repeated ItemSpec itemList = 1;
 }

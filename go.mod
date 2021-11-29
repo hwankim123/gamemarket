@@ -1,4 +1,4 @@
-module first-go-grpc
+module gamemarket
 
 go 1.17
 

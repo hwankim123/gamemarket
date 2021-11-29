@@ -1,8 +1,8 @@
 package controller
 
 import (
-	"first-go-grpc/server/data"
 	"fmt"
+	"gamemarket/server/data"
 	"log"
 )
 
@@ -27,6 +27,7 @@ func PrepareData() {
 	data.LogData()
 }
 
+// Main Logic of Searching Item
 func GetAllController(in ItemQuery) []data.ItemSpec {
 
 	fmt.Println("")
@@ -34,44 +35,46 @@ func GetAllController(in ItemQuery) []data.ItemSpec {
 		in.Name, in.CostUpper, in.CostUnder, in.QueryOpt)
 
 	returnMsg := make([]data.ItemSpec, 0)
-
-	itemData := data.GetData()
+	itemData := data.GetAllData()
 
 	for i := 0; i < len(itemData); i++ {
 		if in.Name == "" || in.Name == itemData[i].Name {
 			// item name matched
-			fmt.Printf("matching item : %s\n", itemData[i].Name)
+			fmt.Printf("item name matched : %s\n", itemData[i].Name)
 
 			dataCost := itemData[i].Cost
 			if in.CostUpper <= dataCost && dataCost <= in.CostUnder {
 				// item cost matched
-				fmt.Printf("matching item cost : %d ~ %d\n", in.CostUpper, in.CostUnder)
-
+				fmt.Printf("%s cost matched : %d ~ %d\n", itemData[i].Name, in.CostUpper, in.CostUnder)
 				var optName string
 				var upper int
 				var under int
+				// dataOpt : option of matched item
 				dataOpt := itemData[i].ItemOpt
+
+				// flag : false when item option unmatched
 				foundItem := true
-				for j := 0; j < len(in.QueryOpt); j++ {
-					// each query option(0 ~ 3)
-
-					cnt := 0 // index of dataOpt
-					for {    // while cnt == len(dataOpt)
+				for j := 0; j < len(in.QueryOpt); j++ { // for loop each query option(0 ~ 3)
+					// index of dataOpt
+					cnt := 0
+					for { // while cnt == len(dataOpt)
 						optName = in.QueryOpt[j].OptName
-						fmt.Printf("matching %s of option : %s\n", itemData[i].Name, optName)
-						if optName == "" || optName == dataOpt[cnt].OptName {
-							// option name matched
-
+						fmt.Printf("%s's option name matched : %d.%s\n", itemData[i].Name, j, optName)
+						if optName == "" || optName == dataOpt[cnt].OptName { // if option name matched
 							upper = in.QueryOpt[j].Upper
 							under = in.QueryOpt[j].Under
+							// value : value of matched option
 							value := dataOpt[cnt].Value
-							fmt.Printf("matching %s of %s value: %d\n", itemData[i].Name, optName, value)
-							if upper <= value && value <= under {
+
+							if upper <= value && value <= under { // if option value matched
+								fmt.Printf("%d.%s's option : %s's value matched : %d\n", j, itemData[i].Name, optName, value)
 								break
 							} else {
 								cnt++
 								if isOutOfIdx(dataOpt, cnt) {
-									// query - option value doesn't matched
+									// item unmatched : all the option values of matched item doesn't matched
+									fmt.Printf("%s's option %s : all the option values of matched item doesn't matched",
+										in.Name, in.QueryOpt[j].OptName)
 									foundItem = false
 									break
 								}
@@ -79,14 +82,16 @@ func GetAllController(in ItemQuery) []data.ItemSpec {
 						} else {
 							cnt++
 							if isOutOfIdx(dataOpt, cnt) {
-								// query - option name doesn't matched
+								// item unmatched : item name doesn't matched
+								fmt.Printf("%s's option %s : option name doesn't matched",
+									in.Name, in.QueryOpt[j].OptName)
 								foundItem = false
 								break
 							}
 						}
 					}
 				}
-				if foundItem {
+				if foundItem { // all queries matched
 					// make repeated ItemOption
 					var itemOpt []data.ItemOpt
 					for j := 0; j < len(dataOpt); j++ {
@@ -109,11 +114,13 @@ func GetAllController(in ItemQuery) []data.ItemSpec {
 					returnMsg = append(returnMsg, spec)
 				}
 			} else {
-				fmt.Printf("Cost unmatched: %d ~ %d\n", in.CostUpper, in.CostUnder)
+				// item unmatched : item cost doesn't matched
+				fmt.Printf("%s's cost %d ~ %d : item cost doesn't matched",
+					in.Name, in.CostUpper, in.CostUnder)
 			}
-
 		} else {
-			fmt.Printf("Has no Item that name is %s\n", in.Name)
+			// item unmatched : item name doesn't matched
+			fmt.Printf("%s : item name doesn't matched", in.Name)
 		}
 	}
 	return returnMsg
@@ -128,11 +135,12 @@ func isOutOfIdx(slice []data.ItemOpt, cnt int) bool {
 	}
 }
 
-// returns ItemSpec, ItemOpt, dataCount
-func SellController(in ItemQuery) (data.ItemSpec, int) {
+// Main Logic of Searching Item
+func SellController(in ItemQuery) data.ItemSpec {
 
 	dataCount := data.GetDataCount()
 
+	// list of Item Option. member value of ItemSpec
 	var optionList []data.ItemOpt
 	queryOpt := in.QueryOpt
 	for j := 0; j < len(queryOpt); j++ {
@@ -143,24 +151,30 @@ func SellController(in ItemQuery) (data.ItemSpec, int) {
 		optionList = append(optionList, option)
 	}
 
-	// Sell data
+	// make ItemSpec
 	itemSpec := data.ItemSpec{
 		Id:      dataCount,
 		Name:    in.Name,
 		Cost:    int(in.CostUnder),
 		ItemOpt: optionList,
 	}
+
+	// append Data
 	data.SetData(itemSpec)
 	data.SetDataCount(dataCount + 1)
-
+	// print Data
 	data.LogData()
-	return itemSpec, dataCount
+
+	return itemSpec
 }
 
+// Main Logic of Buying Item
 func BuyController(id int) (data.ItemSpec, bool, int) {
 
+	// delete data if id matched
 	itemSpec, found := data.DeleteData(id)
-	if found {
+
+	if found { // id unmatched or out of index
 		dataCount := data.GetDataCount() - 1
 		data.SetDataCount(dataCount)
 		return itemSpec, found, dataCount

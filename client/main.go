@@ -6,43 +6,31 @@ import (
 	"log"
 	"time"
 
-	pb "first-go-grpc/protos"
+	pb "gamemarket/protos"
 
 	"google.golang.org/grpc"
 )
 
-const address = "localhost:8080"
+const ADDRESS = "localhost:8080"
 
-// search query : option boundary
-const MIN_UPPER = 0
-const MAX_UNDER = 100
-
-// search query : cost boundary
-const COST_MIN = 0
-const COST_MAX = 10000
-
-// max option count
-const MAX_OPT_COUNT = 3
-
-// main client logic
 func main() {
-	conn, err := grpc.Dial(address, grpc.WithInsecure())
+
+	// grpc connection
+	conn, err := grpc.Dial(ADDRESS, grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}
 	defer conn.Close()
 
+	// create stub
 	stub := pb.NewItemsClient(conn)
 
+	// main logic
 	fmt.Print("\033[H\033[2J")
 	fmt.Print("=====Welcome to GameMarket!=====\n")
 	for {
-		fmt.Println("\n===Choose Mode===")
-		fmt.Println("0. quit")
-		fmt.Println("1. Search All")
-		fmt.Println("2. Sell Item")
-		fmt.Println("3. Buy Item")
-		fmt.Print(">> ")
+		printMenuF()
+
 		var mode int
 		fmt.Scan(&mode)
 		fmt.Print("\033[H\033[2J")
@@ -60,11 +48,15 @@ func main() {
 	}
 }
 
+// Search Items matching with request query
 func getAll(stub pb.ItemsClient) {
+
+	// user input
 	name := inputNameF()
 	costUpper, costUnder := inputCostBoundF()
 	queryOpt := inputQueryOptF()
 
+	// request
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	r, err := stub.GetAll(ctx, &pb.ItemQuery{
@@ -73,6 +65,8 @@ func getAll(stub pb.ItemsClient) {
 		CostUnder: int32(costUnder),
 		QueryOpt:  queryOpt,
 	})
+
+	// handle response
 	if err != nil {
 		log.Fatalf("could not get: %v", err)
 	}
@@ -86,11 +80,15 @@ func getAll(stub pb.ItemsClient) {
 	}
 }
 
+// Sell Item
 func sellItem(stub pb.ItemsClient) {
+
+	// user input
 	name := inputNameF()
 	cost := inputCostF()
 	option := inputOptF()
 
+	// requset
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	r, err := stub.Sell(ctx, &pb.ItemQuery{
@@ -99,18 +97,28 @@ func sellItem(stub pb.ItemsClient) {
 		CostUnder: int32(cost),
 		QueryOpt:  option,
 	})
+
+	// handle response
 	if err != nil {
-		log.Fatalf("Sell error: %v", err)
+		log.Fatalf("could not sell: %v", err)
+	} else {
+		fmt.Printf("====== Sell Result =====\n")
+		fmt.Println(r)
 	}
-	fmt.Printf("====== Sell Result =====\n")
-	fmt.Println(r)
 }
 
+// Buy Item
 func buyItem(stub pb.ItemsClient) {
+
+	// user input
 	id := inputIdF()
+
+	// request
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	r, err := stub.Buy(ctx, &pb.ItemId{Id: int32(id)})
+
+	// handle response
 	fmt.Printf("====== Buy Result =====\n")
 	if err != nil {
 		log.Print(err)
@@ -119,40 +127,65 @@ func buyItem(stub pb.ItemsClient) {
 	}
 }
 
+// search query : option boundary
+const MIN_UPPER = 0
+const MAX_UNDER = 100
+
+// search query : cost boundary
+const COST_MIN = 0
+const COST_MAX = 10000
+
+// max option count
+const MAX_OPT_COUNT = 3
+
 //input name format
 func inputNameF() string {
-	fmt.Print("Item Name(input 's' to skip) >> ")
+
+	// return value
 	var name string
+
+	fmt.Print("Item Name(input 's' to skip) >> ")
 	fmt.Scan(&name)
 	if name == "s" {
 		name = ""
 	}
+
 	return name
 }
 
 //input cost format
 func inputCostF() int {
-	fmt.Print("Item Cost(above 0) >> ")
+
+	// return value
 	var cost int
+
+	fmt.Print("Item Cost(above 0) >> ")
 	fmt.Scan(&cost)
+
 	return cost
 }
 
 //input option format
 func inputOptF() []*pb.QueryOption {
+
+	// return value
 	var queryOpt []*pb.QueryOption
+
 	for i := 0; i < MAX_OPT_COUNT; i++ {
 		fmt.Printf("%d. Item Option Name(input 's' to skip or done) >> ", i)
 		var optName string
 		var value int
 		fmt.Scan(&optName)
 		if optName == "s" && i == 0 {
-			fmt.Println("Please write again")
+			// input error: no input about option name
+			fmt.Println("Option name requires at least one. Please write again")
 			i--
 			break
-		} else if optName == "s" && i != 0 { // stop adding query
+		} else if optName == "s" && i != 0 {
+			// stop adding query
 			break
-		} else { // adding query
+		} else {
+			// adding query
 			fmt.Printf("Option %s Value(required) >> ", optName)
 			fmt.Scan(&value)
 			queryOpt = append(queryOpt, &pb.QueryOption{
@@ -162,13 +195,17 @@ func inputOptF() []*pb.QueryOption {
 			})
 		}
 	}
+
 	return queryOpt
 }
 
 //input cost bound format
 func inputCostBoundF() (int, int) {
+
+	// return value
 	var costUpper int
 	var costUnder int
+
 	fmt.Print("Item Cost Upper(input 0 to skip) >> ")
 	fmt.Scan(&costUpper)
 	if costUpper == 0 {
@@ -179,27 +216,34 @@ func inputCostBoundF() (int, int) {
 	if costUnder == 0 {
 		costUnder = COST_MAX
 	}
+
 	return costUpper, costUnder
 }
 
 //input query option format
 func inputQueryOptF() []*pb.QueryOption {
+
+	// return value
 	var queryOpt []*pb.QueryOption
+
 	for i := 0; i < MAX_OPT_COUNT; i++ {
 		fmt.Printf("%d. Item Option Name(input 's' to skip or done) >> ", i)
 		var optName string
 		var upper, under int
 		fmt.Scan(&optName)
-		if optName == "s" && i == 0 { // search with only name
+		if optName == "s" && i == 0 {
+			// search with only name
 			queryOpt = append(queryOpt, &pb.QueryOption{
 				OptName: "",
 				Upper:   int32(MIN_UPPER),
 				Under:   int32(MAX_UNDER),
 			})
 			break
-		} else if optName == "s" && i != 0 { // stop adding query
+		} else if optName == "s" && i != 0 {
+			// stop adding query
 			break
-		} else { // adding query
+		} else {
+			// adding query
 			fmt.Printf("Option %s Upper(input 0 to skip) >> ", optName)
 			fmt.Scan(&upper)
 			if upper == 0 {
@@ -217,13 +261,28 @@ func inputQueryOptF() []*pb.QueryOption {
 			})
 		}
 	}
+
 	return queryOpt
 }
 
 // input id format
 func inputIdF() int {
-	fmt.Print("Item Id(required) >> ")
+
+	// return value
 	var id int
+
+	fmt.Print("Item Id(required) >> ")
 	fmt.Scan(&id)
+
 	return id
+}
+
+// print menu format
+func printMenuF() {
+	fmt.Println("\n===Choose Mode===")
+	fmt.Println("0. quit")
+	fmt.Println("1. Search All")
+	fmt.Println("2. Sell Item")
+	fmt.Println("3. Buy Item")
+	fmt.Print(">> ")
 }

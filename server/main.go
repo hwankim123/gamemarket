@@ -6,13 +6,13 @@ import (
 	"log"
 	"net"
 
-	pb "first-go-grpc/protos"
-	ctr "first-go-grpc/server/controller"
+	pb "gamemarket/protos"
+	ctr "gamemarket/server/controller"
 
 	"google.golang.org/grpc"
 )
 
-const port = ":8080"
+const PORT = ":8080"
 
 type server struct {
 	pb.UnimplementedItemsServer
@@ -20,14 +20,16 @@ type server struct {
 
 func main() {
 
-	lis, err := net.Listen("tcp", port)
+	// listening port
+	lis, err := net.Listen("tcp", PORT)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
 
-	// data 준비
+	// generate random data and print them
 	ctr.PrepareData()
 
+	// grpc init
 	s := grpc.NewServer()
 	pb.RegisterItemsServer(s, &server{})
 	log.Printf("server listening at %v", lis.Addr())
@@ -86,7 +88,6 @@ func (s *server) GetAll(ctx context.Context, in *pb.ItemQuery) (*pb.ItemList, er
 		return new(pb.ItemList), nil
 	} else {
 		// send ItemList message
-
 		log.Printf("Result Item count: %d", len(returnMsg.GetItemList()))
 		return &returnMsg, nil
 	}
@@ -111,7 +112,7 @@ func (s *server) Sell(ctx context.Context, in *pb.ItemQuery) (*pb.ItemSpec, erro
 	}
 
 	// Sell Main Logic
-	itemSpec, dataCount := ctr.SellController(itemQuery)
+	itemSpec := ctr.SellController(itemQuery)
 
 	// make response message: ItemSpec
 	var returnItemOption []*pb.ItemOption
@@ -123,7 +124,7 @@ func (s *server) Sell(ctx context.Context, in *pb.ItemQuery) (*pb.ItemSpec, erro
 		returnItemOption = append(returnItemOption, &option)
 	}
 	returnItemSpec := pb.ItemSpec{
-		Id:      int32(dataCount),
+		Id:      int32(itemSpec.Id),
 		Name:    itemSpec.Name,
 		Cost:    int32(itemSpec.Cost),
 		ItemOpt: returnItemOption,
@@ -134,7 +135,7 @@ func (s *server) Sell(ctx context.Context, in *pb.ItemQuery) (*pb.ItemSpec, erro
 
 func (s *server) Buy(ctx context.Context, in *pb.ItemId) (*pb.ItemSpec, error) {
 
-	// Sell Main Logic
+	// Bye Main Logic
 	id := int(in.GetId())
 	itemSpec, isDeleted, dataCount := ctr.BuyController(id)
 	if isDeleted {

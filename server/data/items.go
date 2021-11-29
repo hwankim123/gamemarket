@@ -5,11 +5,13 @@ import (
 	"math/rand"
 )
 
+// same structure as items.proto.ItemOption
 type ItemOpt struct {
 	OptName string
 	Value   int
 }
 
+// same structure as items.proto.ItemSpec
 type ItemSpec struct {
 	Id      int
 	Name    string
@@ -45,7 +47,7 @@ const MIN = 0
 const MAX = 100
 const COST_MAX = 10000
 
-func GetData() []ItemSpec {
+func GetAllData() []ItemSpec {
 	return data
 }
 
@@ -65,6 +67,7 @@ func SetDataCount(c int) {
 	dataCount = c
 }
 
+// random generate data
 func GenerateData() {
 	nameLen := len(nameSet)
 	for i := 0; i < dataCount; i++ {
