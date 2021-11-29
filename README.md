@@ -1,5 +1,5 @@
 # Game Market
-2021-2학기 FSSN 텀 프로젝트 : grpc를 사용한 게임 거래소 시스템 시뮬레이션
+2021-2학기 FSSN(풀스택 네트워킹 서비스) 수업의 텀 프로젝트 : grpc를 사용한 게임 거래소 시스템 시뮬레이션
 
 ## 햇갈렸던 점
  - go mod init 시 생성되는 go.mod의 module path에 따라 package의 import 경로도 달라진다.
