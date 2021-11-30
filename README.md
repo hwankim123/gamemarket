@@ -1,5 +1,4 @@
 # Game Market
-------------
 ## 1. 프로젝트 계획 의도
 > 2021-2학기 FSSN(풀스택 네트워킹 서비스) 수업의 텀 프로젝트로, grpc를 사용한 게임 거래소 시스템을 시뮬레이션하는 프로젝트입니다. 이전 개인 프로젝트에서 HTTP 기반의 RESTful 서버를 개발해보았고, 새로운 네트워킹 방식을 경험해보고 싶어 gRPC 기술을 선택했습니다. 언어 또한 가볍게 경험해본다는 마음으로 Go언어를 선택했습니다.
 
@@ -28,8 +27,8 @@
 > > * go mod init 시 생성되는 go.mod의 module path에 따라 package의 import 경로도 달라진다.
 > >
 > > > * ex) go/src/github.com/hwankim123에 'example'이라는 하위 디렉토리를 생성할 경우
-> > > * 1) go mod init의 결과로 module github.com/hwankim123/example 과 같이 경로가 잡혔다면 import하려는 package의 경로의 시작 directory도 github.com/이다.
-> > > * 2) go mod init의 결과로 module example 과 같이 경로가 잡혔다면 import하려는 package의 경로의 시작 directory도 example/이다.
+> > > 1) go mod init의 결과로 module github.com/hwankim123/example 과 같이 경로가 잡혔다면 import하려는 package의 경로의 시작 directory도 github.com/이다.
+> > > 2) go mod init의 결과로 module example 과 같이 경로가 잡혔다면 import하려는 package의 경로의 시작 directory도 example/이다.
 > >
 > > * 내가 만든 package를 import하려고 할 때 경로만 잘 설정하였다면 VSCode - GO extension의 auto import 기능으로 package를 자동으로 import해준다.
 > > * 그리고 경험상 import하려는 package에 naming을 따로 해주는 경우에는 수동으로 package 경로를 설정해줘야 하는 것 같다.
